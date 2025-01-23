@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: template
+  datasource:
+    url: jdbc:mysql://localhost:3306/mysql?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: sa
+    password: mysqlpassword
+    driver-class-name: com.mysql.cj.jdbc.Driver
