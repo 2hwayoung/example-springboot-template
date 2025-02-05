@@ -1,43 +1,76 @@
 package com.springboot.template.domain.post.post.controller;
 
+import com.springboot.template.domain.post.post.entity.Post;
+import com.springboot.template.domain.post.post.service.PostService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.hibernate.validator.constraints.Length;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/posts")
+@RequiredArgsConstructor
 public class PostController {
 
+    private final PostService postService;
+
     @GetMapping("/write")
-    @ResponseBody
-    public String showWrite() {
-        return getFormHtml("");
+    public String showWrite(WriteForm form, BindingResult bindingResult) {
+        return "domain/post/post/write";
     }
 
+    @AllArgsConstructor
+    @Getter
+    public static class WriteForm {
+        @NotBlank(message = "01-제목을 입력해주세요.")
+        @Length(min = 5, message = "02-제목은 5글자 이상입니다.")
+        private String title;
+        @NotBlank(message = "03-내용을 입력해주세요.")
+        @Length(min = 10, message = "04-내용은 10글자 이상입니다.")
+        private String content;
+    }
+
+
+    // @ResponseBody를 빼면 반환값을 템플릿으로 인식한다.
     @PostMapping("/write")
-    @ResponseBody
-    public String doWrite(String title, String content) {
-        if (title.isBlank() || title.isEmpty()) return getFormHtml("제목을 입력해주세요.");
-        if (content.isBlank() || content.isEmpty()) return getFormHtml("내용을 입력해주세요");
+    public String doWrite(@Valid WriteForm form, BindingResult bindingResult) {
 
-        if (title.length() < 5) return getFormHtml("제목은 5글자 이상 작성해주세요.");
-        if (content.length() < 10) return getFormHtml("내용은 10글자 이상 작성해주세요.");
+        if (bindingResult.hasErrors()) {
+            return "domain/post/post/write";
+        }
 
-        return """
-                <h1>게시물 조회</h1>
-                <div>%s</div>
-                <div>%s</div>
-                """.formatted(title, content);
+        postService.write(form.getTitle(), form.getContent());
+
+        return "redirect:/posts"; //리다이렉트
     }
 
-    public String getFormHtml(String errorMsg) {
-        return """
-                <div>%s</div>
-                <form method="post">
-                    <input type="text" name="title" placeholder="제목" /> <br>
-                    <textarea name="content"></textarea> <br>
-                    <input type="submit" value="등록" /> <br>
-                </form>
-                """.formatted(errorMsg);
+    @GetMapping
+    private String showList(Model model) {
+
+        List<Post> posts = postService.getItems();
+        model.addAttribute("posts", posts);
+
+        return "domain/post/post/list";
+    }
+
+    @GetMapping("/detail/{id}")
+    private String detail(@PathVariable long id, Model model) {
+
+        Post post = postService.getItem(id).get();
+
+        model.addAttribute("post", post);
+        return "domain/post/post/detail";
     }
 
 }
